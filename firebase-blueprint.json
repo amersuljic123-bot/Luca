@@ -1,0 +1,124 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and settings",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "billingDay": { "type": "integer", "description": "The day of the month the budget resets (default 15)" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "A financial transaction extracted or manual",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "amount": { "type": "number" },
+        "merchant": { "type": "string" },
+        "category": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "type": { "type": "string", "enum": ["expense", "transfer", "income"] },
+        "rawText": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "screenshotId": { "type": "string", "description": "Reference to the source screenshot" }
+      },
+      "required": ["userId", "date", "amount", "merchant", "category"]
+    },
+    "Rule": {
+      "title": "Rule",
+      "description": "Categorization rule",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "pattern": { "type": "string", "description": "Substring or exact merchant name" },
+        "type": { "type": "string", "enum": ["exact", "keyword"] },
+        "amount": { "type": "number", "description": "Optional exact amount trigger" },
+        "targetCategory": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "pattern", "type", "targetCategory"]
+    },
+    "Screenshot": {
+      "title": "Screenshot",
+      "description": "Raw screenshot data",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "base64": { "type": "string" },
+        "name": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "base64", "name", "createdAt"]
+    },
+    "SavingsAccount": {
+      "title": "SavingsAccount",
+      "description": "User savings and investment accounts",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "totalBalance": { "type": "number" },
+        "buckets": { 
+          "type": "array", 
+          "items": { 
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "amount": { "type": "number" },
+              "target": { "type": "number" },
+              "color": { "type": "string" }
+            }
+          }
+        },
+        "lastUpdated": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "totalBalance"]
+    },
+    "MerchantMetadata": {
+      "title": "MerchantMetadata",
+      "description": "Custom branding for merchants",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "merchantName": { "type": "string" },
+        "customLogo": { "type": "string" },
+        "customColor": { "type": "string" }
+      },
+      "required": ["userId", "merchantName"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "User settings"
+    },
+    "transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "List of all transactions"
+    },
+    "rules/{ruleId}": {
+      "schema": "Rule",
+      "description": "User-defined categorization rules"
+    },
+    "screenshots/{screenshotId}": {
+      "schema": "Screenshot",
+      "description": "Uploaded raw screenshots"
+    },
+    "savings_accounts/{accountId}": {
+      "schema": "SavingsAccount",
+      "description": "User savings accounts"
+    },
+    "merchants/{merchantId}": {
+      "schema": "MerchantMetadata",
+      "description": "Custom merchant branding"
+    }
+  }
+}

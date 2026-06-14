@@ -1,0 +1,119 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Entity Validations ---
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email']) &&
+             data.uid == request.auth.uid &&
+             data.email is string;
+    }
+
+    function isValidTransaction(data) {
+      let requiredFields = ['userId', 'date', 'amount', 'merchant', 'category'];
+      return data.keys().hasAll(requiredFields) &&
+             data.userId == request.auth.uid &&
+             data.amount is number &&
+             data.merchant is string &&
+             data.merchant.size() < 500 &&
+             (!('tags' in data) || data.tags is list) &&
+             (!('type' in data) || data.type in ['expense', 'transfer', 'income']) &&
+             (!('screenshotId' in data) || (data.screenshotId is string || data.screenshotId == null));
+    }
+
+    function isValidRule(data) {
+      return data.keys().hasAll(['userId', 'pattern', 'type', 'targetCategory']) &&
+             data.userId == request.auth.uid &&
+             data.pattern is string &&
+             data.type in ['exact', 'keyword', 'tag'];
+    }
+
+    function isValidScreenshot(data) {
+      return data.keys().hasAll(['userId', 'base64', 'name', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.base64 is string &&
+             data.base64.size() < 10485760 &&
+             (!('balance' in data) || data.balance is number);
+    }
+
+    function isValidSavingsAccount(data) {
+      return data.keys().hasAll(['userId', 'name', 'totalBalance', 'lastUpdated']) &&
+             data.userId == request.auth.uid &&
+             data.name is string &&
+             data.totalBalance is number &&
+             (!('buckets' in data) || data.buckets is list);
+    }
+
+    function isValidMerchant(data) {
+      return data.keys().hasAll(['userId', 'merchantName']) &&
+             data.userId == request.auth.uid &&
+             data.merchantName is string &&
+             (!('customLogo' in data) || data.customLogo is string) &&
+             (!('customColor' in data) || data.customColor is string);
+    }
+
+    // --- Matches ---
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /transactions/{transactionId} {
+      allow create: if isSignedIn() && isValidTransaction(incoming());
+      allow list, get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidTransaction(incoming()) && resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
+    }
+
+    match /rules/{ruleId} {
+      allow create: if isSignedIn() && isValidRule(incoming());
+      allow list, get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidRule(incoming()) && resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
+    }
+
+    match /screenshots/{screenshotId} {
+      allow create: if isSignedIn() && isValidScreenshot(incoming());
+      allow list, get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
+    }
+
+    match /savings_accounts/{accountId} {
+      allow create: if isSignedIn() && isValidSavingsAccount(incoming());
+      allow list, get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidSavingsAccount(incoming()) && resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
+    }
+
+    match /merchants/{merchantId} {
+      allow create: if isSignedIn() && isValidMerchant(incoming());
+      allow list, get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidMerchant(incoming()) && resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
+    }
+  }
+}

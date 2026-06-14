@@ -1,0 +1,6 @@
+{
+  "name": "Luca",
+  "description": "Luca is a personal finance companion that understands the routines, habits, and behaviours behind your spending. It provides behavioral insights to help you build a healthier relationship with your money.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
